@@ -11,7 +11,6 @@ import {
   UserPlus, 
   BookOpen, 
   Sparkles, 
-  AlertCircle, 
   Users,
   Save,
   X,
@@ -140,12 +139,12 @@ export function TeacherAssignmentsPage() {
   useEffect(() => {
     setActiveAssignments(prev => {
       const next: Record<string, string[]> = {}
-      selectedSubjectKeys.forEach(idKey => {
-        if (prev[idKey]) {
-          next[idKey] = prev[idKey]
-        } else {
-          const [name, level] = idKey.split('|')
-          next[idKey] = specialistGrades
+        selectedSubjectKeys.forEach(idKey => {
+          if (prev[idKey]) {
+            next[idKey] = prev[idKey]
+          } else {
+            const [, level] = idKey.split('|')
+            next[idKey] = specialistGrades
             .filter(g => {
               if (g.id.includes('Secundaria')) return level === 'Secundaria'
               if (g.shortName === '6to') return level === 'Primaria'

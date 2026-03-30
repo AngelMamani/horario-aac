@@ -4,7 +4,7 @@ import { useTeachers } from '../../teachers/hooks/useTeachers'
 import { useCourses } from '../../courses/hooks/useCourses'
 
 export function ReportsPage() {
-  const { students, loading: loadingStudents } = useStudents()
+  const { students } = useStudents()
   const { grades } = useGrades()
   const { teachers } = useTeachers()
   const { courses } = useCourses()
