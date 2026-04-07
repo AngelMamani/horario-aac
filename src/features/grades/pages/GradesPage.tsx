@@ -3,8 +3,10 @@ import { useMemo, useState } from 'react'
 import type { Grade } from '../../../shared/types/admin.types'
 import { useGrades } from '../hooks/useGrades'
 import { useGradesConfig } from '../hooks/useGradesConfig'
-import { Link } from 'react-router-dom'
-import { PlusCircle, Trash2, Library, Users, Sparkles, LayoutGrid, Layers, HelpCircle } from 'lucide-react'
+import { PlusCircle, Users, Layers, LayoutGrid } from 'lucide-react'
+import { GroupingModal } from '../components/GroupingModal'
+import { ManageGroupModal } from '../components/ManageGroupModal'
+import { GradesTable } from '../components/GradesTable'
 
 function showToast(
   icon: 'success' | 'error' | 'warning' | 'info',
@@ -273,131 +275,33 @@ export function GradesPage() {
         )}
 
         {/* Main Table Panel */}
-        <div className="panel-card" style={{ padding: '0', overflow: 'hidden' }}>
-          <div className="panel-card__header" style={{ padding: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
-            <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Grados de {activeTab}</h3>
-            {currentGrades.length === 0 && (
-              <button className="btn btn--primary btn--small" onClick={() => void handleAutoGenerate()}>
-                <Sparkles size={14} style={{ marginRight: '5px' }} /> Generar Oficiales
-              </button>
-            )}
-          </div>
-          
-          <div className="table-wrapper">
-             <table>
-               <thead>
-                 <tr>
-                   <th>Grado</th>
-                   {activeTab === 'Secundaria' && <th>Grupo</th>}
-                   <th>Estado</th>
-                   <th style={{ textAlign: 'center' }}>Acción</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 {currentGrades.length === 0 ? (
-                   <tr>
-                     <td colSpan={4} style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-                         <HelpCircle size={32} style={{ opacity: 0.3, marginBottom: '0.5rem' }} /><br/>
-                         No hay grados en este nivel.
-                     </td>
-                   </tr>
-                 ) : (
-                   currentGrades.map(g => (
-                     <tr key={g.id}>
-                       <td><strong style={{ fontSize: '0.9rem' }}>{g.name}</strong></td>
-                       {activeTab === 'Secundaria' && (
-                         <td><span style={{ fontSize: '0.7rem', background: '#f1f5f9', padding: '2px 8px', borderRadius: '10px', color: g.secondaryGroup ? '#0f172a' : '#94a3af', fontWeight: '600' }}>{g.secondaryGroup || 'Sin Grupo'}</span></td>
-                       )}
-                       <td>
-                        <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '4px', background: '#dcfce7', color: '#166534', fontWeight: 'bold' }}>ACTIVO</span>
-                       </td>
-                       <td>
-                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
-                            <Link to="/malla-curricular" className="btn btn--small btn--primary" title="Ver Malla Curricular" style={{ padding: '0.4rem 0.8rem' }}>
-                                <Library size={14}/>
-                            </Link>
-                            <button className="btn btn--small btn--danger" style={{ padding: '0.4rem 0.8rem' }} onClick={() => void handleDelete(g.id, g.name)} title="Eliminar Grado">
-                                <Trash2 size={14}/>
-                            </button>
-                         </div>
-                       </td>
-                     </tr>
-                   ))
-                 )}
-               </tbody>
-             </table>
-          </div>
-        </div>
+        <GradesTable 
+          activeTab={activeTab}
+          currentGrades={currentGrades}
+          onAutoGenerate={handleAutoGenerate}
+          onDelete={handleDelete}
+        />
 
       </div>
 
-      {/* MODAL ORGANIZAR */}
-      {isGroupingModalOpen && (
-        <div className="grouping-modal-overlay">
-          <div className="grouping-modal" style={{ maxWidth: '450px', padding: '1.5rem', borderRadius: '24px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.2rem' }}>
-              <Layers size={22} color="var(--color-primary-800)" />
-              <h3 style={{ margin: 0 }}>Vincular Grados</h3>
-            </div>
-            
-            <label style={{ fontSize: '0.85rem', fontWeight: 'bold', color: '#64748b' }}>ELEGIR GRUPO:</label>
-            <select 
-                value={selectedGroupTarget} 
-                onChange={e => setSelectedGroupTarget(e.target.value)}
-                style={{ width: '100%', padding: '0.8rem', margin: '0.6rem 0 1.2rem', borderRadius: '12px', border: '1px solid #ddd', fontSize: '1rem' }}
-            >
-              {secondaryGroupList.map(name => <option key={name} value={name}>{name}</option>)}
-            </select>
+      <GroupingModal 
+        isOpen={isGroupingModalOpen}
+        onClose={() => setIsGroupingModalOpen(false)}
+        selectedGroupTarget={selectedGroupTarget}
+        setSelectedGroupTarget={setSelectedGroupTarget}
+        secondaryGroupList={secondaryGroupList}
+        memoizedGradesByLevel={memoizedGradesByLevel}
+        modalAssignments={modalAssignments}
+        onToggleGrade={handleToggleModalGrade}
+        onSave={handleSaveGrouping}
+      />
 
-            <div style={{ background: '#f8fafc', padding: '0.6rem', borderRadius: '12px', maxHeight: '240px', overflowY: 'auto', border: '1px solid #f1f5f9' }}>
-               {memoizedGradesByLevel.Secundaria.map(g => (
-                 <label key={g.id} style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', padding: '0.7rem', cursor: 'pointer', borderBottom: '1px solid #f1f5f9' }}>
-                    <input 
-                        type="checkbox" 
-                        checked={modalAssignments[g.id] === selectedGroupTarget}
-                        disabled={modalAssignments[g.id] !== undefined && modalAssignments[g.id] !== selectedGroupTarget}
-                        onChange={e => handleToggleModalGrade(g.id, e.target.checked)}
-                        style={{ width: '18px', height: '18px' }}
-                    />
-                    <div style={{ flex: 1 }}>
-                        <span style={{ fontSize: '0.95rem', fontWeight: '600', color: modalAssignments[g.id] !== undefined && modalAssignments[g.id] !== selectedGroupTarget ? '#94a3af' : 'inherit' }}>{g.name}</span>
-                        {modalAssignments[g.id] !== undefined && modalAssignments[g.id] !== selectedGroupTarget && (
-                            <div style={{ fontSize: '0.7rem', color: '#ef4444' }}>Ocupado por {modalAssignments[g.id]}</div>
-                        )}
-                    </div>
-                 </label>
-               ))}
-            </div>
-
-            <div className="grouping-modal__actions" style={{ marginTop: '1.8rem', gap: '1rem' }}>
-              <button className="btn" onClick={() => setIsGroupingModalOpen(false)} style={{ flex: 1, padding: '0.8rem' }}>Cancelar</button>
-              <button className="btn btn--primary" onClick={() => void handleSaveGrouping()} style={{ flex: 1, padding: '0.8rem', fontWeight: 'bold' }}>Guardar</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODAL GESTIONAR GRUPO */}
-      {isManageGroupModalOpen && (
-        <div className="grouping-modal-overlay">
-          <div className="grouping-modal" style={{ maxWidth: '400px', textAlign: 'center', padding: '2rem', borderRadius: '24px' }}>
-            <div style={{ background: '#f8fafc', width: '70px', height: '70px', borderRadius: '50%', display: 'grid', placeItems: 'center', margin: '0 auto 1.2rem' }}>
-                <LayoutGrid size={32} color="var(--color-primary-800)" />
-            </div>
-            <h3 style={{ margin: '0 0 0.5rem', color: 'var(--color-primary-900)' }}>Gestionar {managingGroup}</h3>
-            <p style={{ fontSize: '0.9rem', color: '#64748b', marginBottom: '2.2rem' }}>¿Qué acción deseas realizar con este grupo institucional?</p>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                <button className="btn btn--danger" onClick={() => void handleDeleteGroupAction(managingGroup)} style={{ padding: '0.9rem', fontWeight: 'bold' }}>
-                    ELIMINAR GRUPO
-                </button>
-                <button className="btn" onClick={() => setIsManageGroupModalOpen(false)} style={{ padding: '0.9rem' }}>
-                    SALIR
-                </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ManageGroupModal 
+        isOpen={isManageGroupModalOpen}
+        onClose={() => setIsManageGroupModalOpen(false)}
+        managingGroup={managingGroup}
+        onDeleteGroup={handleDeleteGroupAction}
+      />
     </section>
   )
 }

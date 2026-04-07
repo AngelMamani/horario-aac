@@ -7,16 +7,10 @@ import { useTeachers } from '../../teachers/hooks/useTeachers'
 import { useGradeCourses } from '../../grades/hooks/useGradeCourses'
 import { useGradesConfig } from '../../grades/hooks/useGradesConfig'
 import type { GradeCourse } from '../../../shared/types/admin.types'
-import { 
-  UserPlus, 
-  BookOpen, 
-  Sparkles, 
-  Users,
-  Save,
-  X,
-  Trash2
-} from 'lucide-react'
+import { UserPlus } from 'lucide-react'
 import Swal from 'sweetalert2'
+import { SpecialistView } from '../components/SpecialistView'
+import { GeneralView } from '../components/GeneralView'
 
 type PageMode = 'general' | 'especialista'
 
@@ -52,13 +46,13 @@ export function TeacherAssignmentsPage() {
   
   const isSelected4or5 = useMemo(() => {
     const active = generalGrades.find(g => g.id === generalGradeId)
-    return active?.name.includes('4 AÑOS') || active?.name.includes('5 AÑOS')
+    return !!(active?.name.includes('4 AÑOS') || active?.name.includes('5 AÑOS'))
   }, [generalGradeId, generalGrades])
 
   const unifiedIds = useMemo(() => (g4 && g5) ? [g4.id, g5.id] : [], [g4, g5])
   const isUnifiedGrade = (id: string) => {
     const g = generalGrades.find(gr => gr.id === id)
-    return g?.name.includes('4 AÑOS') || g?.name.includes('5 AÑOS')
+    return !!(g?.name.includes('4 AÑOS') || g?.name.includes('5 AÑOS'))
   }
 
   // ── Specialist grades: 6to + Secundaria groups ──
@@ -427,279 +421,44 @@ export function TeacherAssignmentsPage() {
       </div>
 
       {mode === 'especialista' ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="panel-card" style={{ padding: '1.25rem' }}>
-            <h4 style={{ margin: '0 0 0.8rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#334155' }}>
-              <Users size={18} color="#0891b2" /> Paso 1 — Seleccionar Docente
-            </h4>
-            <select
-              value={selectedTeacherId}
-              onChange={e => { setSelectedTeacherId(e.target.value); setSelectedSubjectKeys([]); setSubjectSearch('') }}
-              style={{ width: '100%', padding: '0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '1rem', outline: 'none' }}
-            >
-              <option value="">-- Elegir docente --</option>
-              {teachers
-                .filter(t => !t.id.includes('años'))
-                .sort((a,b) => a.fullName.localeCompare(b.fullName))
-                .map(t => (
-                  <option key={t.id} value={t.id}>
-                    {t.fullName} {t.position ? `(${t.position})` : ''}
-                  </option>
-                ))
-              }
-            </select>
-          </div>
-
-          {selectedTeacherId && (
-            <div className="panel-card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: '#334155' }}>
-                  <BookOpen size={18} color="#0891b2" /> Paso 2 — Marcar Materias
-                </h4>
-                <input 
-                  type="text" 
-                  placeholder="Buscar materia..." 
-                  value={subjectSearch}
-                  onChange={e => setSubjectSearch(e.target.value)}
-                  style={{ padding: '0.4rem 0.8rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.8rem', width: '200px' }}
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '0.5rem', maxHeight: '320px', overflowY: 'auto', padding: '0.8rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                {specialistSubjects
-                  .filter(s => s.name.toLowerCase().includes(subjectSearch.toLowerCase()))
-                  .map(subject => {
-                    const isSelected = selectedSubjectKeys.includes(subject.idKey)
-                    const assignmentsWithKey = allSpecialistAssignments.filter(a => {
-                      const c = courses.find(cc => cc.id === a.courseId)
-                      return c?.name === subject.name && c?.level === subject.level
-                    })
-                    const otherTeachers = Array.from(new Set(assignmentsWithKey.map(a => a.teacherId))).filter(tid => tid !== selectedTeacherId)
-                    
-                    return (
-                      <label
-                        key={subject.idKey}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: '0.5rem',
-                          padding: '0.5rem 0.7rem',
-                          background: isSelected ? '#ecfdf5' : '#fff',
-                          borderRadius: '8px',
-                          border: `1px solid ${isSelected ? '#86efac' : '#f1f5f9'}`,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={e => {
-                            if (e.target.checked) setSelectedSubjectKeys(prev => [...prev, subject.idKey])
-                            else setSelectedSubjectKeys(prev => prev.filter(k => k !== subject.idKey))
-                          }}
-                        />
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
-                            {subject.name}
-                            <span style={{ fontSize: '0.6rem', color: '#94a3b8', background: '#f1f5f9', padding: '1px 4px', borderRadius: '3px' }}>
-                              {subject.level === 'Primaria' ? 'PRI' : 'SEC'}
-                            </span>
-                          </span>
-                          {otherTeachers.length > 0 && (
-                            <div style={{ fontSize: '0.6rem', color: '#ea580c' }}> {otherTeachers.length} ya asignado(s) </div>
-                          )}
-                        </div>
-                      </label>
-                    )
-                  })}
-              </div>
-            </div>
-          )}
-
-          {selectedSubjectKeys.length > 0 && (
-            <div className="panel-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="panel-card__header" style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <h4 style={{ margin: 0, fontSize: '0.9rem' }}>Paso 3 — Elegir Grados para cada Materia</h4>
-                <span style={{ fontSize: '0.8rem', color: '#0891b2', fontWeight: 'bold' }}> {totalAssignmentsCount} asignaciones </span>
-              </div>
-              <div className="table-wrapper" style={{ margin: 0 }}>
-                <table style={{ minWidth: '400px' }}>
-                  <thead>
-                    <tr>
-                      <th>Materia</th>
-                      {specialistGrades.map(g => <th key={g.id} style={{ textAlign: 'center' }}>{g.shortName}</th>)}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...selectedSubjectKeys].sort().map(idKey => {
-                      const [name, level] = idKey.split('|')
-                      const subject = specialistSubjects.find(s => s.idKey === idKey)
-                      const assignedGrades = activeAssignments[idKey] || []
-                      return (
-                        <tr key={idKey}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: subject?.color || '#94a3b8' }} />
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <strong style={{ fontSize: '0.8rem' }}>{name}</strong>
-                                <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{level}</span>
-                              </div>
-                            </div>
-                          </td>
-                          {specialistGrades.map(g => (
-                            <td key={g.id} style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => toggleAssignment(idKey, g.id)}>
-                              <input type="checkbox" checked={assignedGrades.includes(g.id)} onChange={() => {}} />
-                            </td>
-                          ))}
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-                <button
-                  className="btn btn--primary"
-                  onClick={() => void handleSpecialistSave()}
-                  style={{ background: '#0891b2', padding: '0.7rem 1.8rem', fontWeight: 'bold', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '8px' }}
-                >
-                  <Save size={16} /> Confirmar {totalAssignmentsCount} Asignaciones
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="panel-card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div className="panel-card__header" style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h4 style={{ margin: 0, fontSize: '0.95rem' }}>Resumen de Asignaciones Actuales</h4>
-              {allSpecialistAssignments.length > 0 && (
-                <button onClick={() => void handleClearAllSpecialists()} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', padding: '0.4rem 0.8rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 'bold' }}>
-                   Limpiar Todo
-                </button>
-              )}
-            </div>
-            <div className="table-wrapper" style={{ margin: 0 }}>
-              <table style={{ minWidth: '450px' }}>
-                <thead>
-                  <tr>
-                    <th>Materia</th>
-                    {specialistGrades.map(g => <th key={g.id} style={{ textAlign: 'center' }}>{g.shortName}</th>)}
-                  </tr>
-                </thead>
-                <tbody>
-                  {loadingAssignments ? (
-                    <tr><td colSpan={specialistGrades.length + 1} style={{ textAlign: 'center', padding: '2rem' }}>Cargando...</td></tr>
-                  ) : (
-                    specialistSubjects.map(subject => {
-                      const hasAny = specialistGrades.some(g =>
-                        allSpecialistAssignments.some(a => {
-                          const c = courses.find(cc => cc.id === a.courseId)
-                          return c?.name === subject.name && c?.level === subject.level && a.gradeId === g.id
-                        })
-                      )
-                      return (
-                        <tr key={subject.idKey} style={{ opacity: hasAny ? 1 : 0.45 }}>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                              <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: subject.color || '#e2e8f0' }} />
-                              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                <span style={{ fontSize: '0.8rem' }}>{subject.name}</span>
-                                <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>{subject.level}</span>
-                              </div>
-                            </div>
-                          </td>
-                          {specialistGrades.map(g => {
-                            const assignment = allSpecialistAssignments.find(a => {
-                               const c = courses.find(cc => cc.id === a.courseId)
-                               return c?.name === subject.name && c?.level === subject.level && a.gradeId === g.id
-                            })
-                            const teacher = assignment ? teachers.find(t => t.id === assignment.teacherId) : null
-                            return (
-                              <td key={g.id} style={{ textAlign: 'center', fontSize: '0.7rem' }}>
-                                {teacher ? (
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                                    <span>{teacher.fullName.split(' ').slice(0, 2).join(' ')}</span>
-                                    <button onClick={() => void handleUnassign(g.id, assignment!.courseId, teacher.fullName, subject.name)} style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}><X size={12} /></button>
-                                  </div>
-                                ) : '---'}
-                              </td>
-                            )
-                          })}
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+        <SpecialistView 
+          teachers={teachers}
+          selectedTeacherId={selectedTeacherId}
+          onTeacherChange={(id) => { setSelectedTeacherId(id); setSelectedSubjectKeys([]); setSubjectSearch('') }}
+          specialistSubjects={specialistSubjects}
+          subjectSearch={subjectSearch}
+          onSubjectSearchChange={setSubjectSearch}
+          selectedSubjectKeys={selectedSubjectKeys}
+          onSubjectToggle={(key, checked) => {
+            if (checked) setSelectedSubjectKeys(prev => [...prev, key])
+            else setSelectedSubjectKeys(prev => prev.filter(k => k !== key))
+          }}
+          allSpecialistAssignments={allSpecialistAssignments}
+          courses={courses}
+          specialistGrades={specialistGrades}
+          activeAssignments={activeAssignments}
+          onToggleAssignment={toggleAssignment}
+          totalAssignmentsCount={totalAssignmentsCount}
+          onSave={handleSpecialistSave}
+          onClearAll={handleClearAllSpecialists}
+          onUnassign={handleUnassign}
+          loadingAssignments={loadingAssignments}
+        />
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <div className="panel-card" style={{ padding: '1.25rem' }}>
-            <h4 style={{ margin: '0 0 0.8rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}> <Users size={16} /> Seleccionar Grado </h4>
-            <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', paddingBottom: '0.5rem' }}>
-              {generalGrades.map(g => {
-                const isGrouped = isSelected4or5 && isUnifiedGrade(g.id)
-                const isActive = g.id === generalGradeId || isGrouped
-                return (
-                  <button
-                    key={g.id}
-                    onClick={() => setGeneralGradeId(g.id)}
-                    style={{
-                      padding: '0.5rem 1.25rem', borderRadius: '20px', whiteSpace: 'nowrap',
-                      fontSize: '0.85rem', border: 'none', fontWeight: 'bold', cursor: 'pointer',
-                      background: isActive ? 'var(--color-primary-800)' : '#f1f5f9',
-                      color: isActive ? '#fff' : '#475569',
-                      position: 'relative'
-                    }}
-                  > 
-                    {g.name} 
-                    {isUnifiedGrade(g.id) && (
-                      <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#0891b2', color: '#fff', fontSize: '0.55rem', padding: '1px 4px', borderRadius: '4px' }}>
-                        UNI
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {generalGradeId && (
-            <div className="panel-card" style={{ padding: '1.25rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                <h4 style={{ margin: 0 }}>Cursos de {generalGrades.find(g => g.id === generalGradeId)?.name}</h4>
-                <div style={{ display: 'flex', gap: '10px' }}>
-                  <button className="btn btn--primary btn--small" onClick={() => void handleGeneralMasiva()}> <Sparkles size={14} /> Masiva </button>
-                  {generalGradeCourses.length > 0 && (
-                    <button className="btn btn--danger btn--small" onClick={() => void handleClearAllGeneral()}> <Trash2 size={14} /> Limpiar </button>
-                  )}
-                </div>
-              </div>
-              <div className="table-wrapper">
-                <table>
-                  <thead><tr><th>Curso</th><th>Docente</th><th>Acción</th></tr></thead>
-                  <tbody>
-                    {generalLoading ? ( <tr><td colSpan={3}>Cargando...</td></tr> ) : generalGradeCourses.length === 0 ? ( <tr><td colSpan={3}>Sin asignaciones.</td></tr> ) : (
-                      generalGradeCourses.map(gc => {
-                        const course = courses.find(c => c.id === gc.courseId)
-                        const teacherName = teachers.find(t => t.id === gc.teacherId)?.fullName || '---'
-                        return (
-                          <tr key={gc.id}>
-                            <td><strong>{course?.name}</strong> <span style={{fontSize:'0.7rem', color:'#94a3b8'}}>({course?.level})</span></td>
-                            <td>{teacherName}</td>
-                            <td>
-                              <button onClick={() => void handleUnassign(gc.gradeId, gc.courseId, teacherName, course?.name || '')} style={{ border: 'none', background: '#fee2e2', color: '#b91c1c', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem' }}> Quitar </button>
-                            </td>
-                          </tr>
-                        )
-                      })
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
+        <GeneralView 
+          generalGrades={generalGrades}
+          generalGradeId={generalGradeId}
+          onGradeChange={setGeneralGradeId}
+          isUnifiedGrade={isUnifiedGrade}
+          isSelected4or5={isSelected4or5}
+          onGeneralMasiva={handleGeneralMasiva}
+          onClearAll={handleClearAllGeneral}
+          generalLoading={generalLoading}
+          generalGradeCourses={generalGradeCourses}
+          courses={courses}
+          teachers={teachers}
+          onUnassign={handleUnassign}
+        />
       )}
     </section>
   )

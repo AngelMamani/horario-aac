@@ -4,6 +4,11 @@ import { useGrades } from '../../grades/hooks/useGrades'
 import { useCourses } from '../../courses/hooks/useCourses'
 import { useTeachers } from '../../teachers/hooks/useTeachers'
 import { useGradeCourses } from '../../grades/hooks/useGradeCourses'
+import { PageHeader } from '../../../shared/components/PageHeader'
+import { PanelCard } from '../../../shared/components/PanelCard'
+import { AssignmentForm } from '../components/AssignmentForm'
+import { AssignedCoursesTable } from '../components/AssignedCoursesTable'
+import { BookOpen } from 'lucide-react'
 import type { Grade } from '../../../shared/types/admin.types'
 
 export function MallaCurricularPage() {
@@ -102,14 +107,13 @@ export function MallaCurricularPage() {
 
   return (
     <section>
-      <header className="page-header">
-        <h2>Malla Curricular</h2>
-        <p>Asigna cursos y docentes a cada grado y sección.</p>
-      </header>
+      <PageHeader 
+        title="Malla Curricular" 
+        subtitle="Asigna cursos y docentes a cada grado y sección."
+        icon={BookOpen}
+      />
 
-      <div className="panel-card form-card" style={{ marginBottom: '1.5rem' }}>
-        <h3 style={{ marginBottom: '1rem', color: 'var(--color-primary-900)' }}>1. Seleccionar Nivel y Grado</h3>
-        
+      <PanelCard title="1. Seleccionar Nivel y Grado">
         <div style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #ddd', paddingBottom: '0', marginBottom: '1.5rem', overflowX: 'auto' }}>
           {levels.map(level => (
             <button 
@@ -145,7 +149,7 @@ export function MallaCurricularPage() {
             setSelectedTeacher('')
           }}
           disabled={gradesLoading || !selectedGroup}
-          style={{ width: '100%', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ccc', fontSize: '1rem' }}
+          style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', border: '1px solid #ccc', fontSize: '1rem' }}
         >
           <option value="">-- Elige una opción para ver su malla --</option>
           {selectedGroup === 'Secundaria' ? (
@@ -163,109 +167,49 @@ export function MallaCurricularPage() {
             ))
           )}
         </select>
-      </div>
+      </PanelCard>
+
+      <div style={{ height: '1.5rem' }} />
 
       {selectedGrade && !isLoading && (
-        <div className="panel-card form-card" style={{ marginBottom: '1.5rem' }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--color-primary-900)' }}>2. Asignar Cursos y Docentes</h3>
-          <p style={{ marginBottom: '1rem', color: '#666' }}>
+        <PanelCard 
+          title="2. Asignar Cursos y Docentes" 
+          headerActions={<span style={{ fontSize: '0.8rem', color: '#666' }}>
             {selectedGroup === 'Secundaria' && selectedGrade.startsWith('Secundaria') 
-              ? `Estás configurando la malla para todo el grupo: ${selectedGrade}`
-              : `Configurando malla para: ${memoizedLevels[selectedGroup]?.find(g => g.id === selectedGrade)?.name || selectedGrade}`}
-          </p>
-          <div className="manage-group-form">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div>
-                <label className="modal-label" style={{ marginBottom: '0.5rem', display: 'block', fontWeight: 'bold' }}>Cursos (Selección Múltiple)</label>
-                <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid #ccc', borderRadius: '4px', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', backgroundColor: '#f9fafb' }}>
-                  {courses.map(c => {
-                    const isAssigned = gradeCourses.some(gc => gc.courseId === c.id)
-                    return (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: isAssigned ? 'not-allowed' : 'pointer', opacity: isAssigned ? 0.5 : 1 }}>
-                        <input 
-                          type="checkbox" 
-                          checked={selectedCourses.includes(c.id) || isAssigned}
-                          disabled={isAssigned}
-                          onChange={() => handleToggleCourse(c.id)}
-                          style={{ width: '18px', height: '18px' }}
-                        />
-                        <span style={{ fontSize: '0.95rem' }}>{c.name}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
-                <div style={{ flex: 1 }}>
-                  <label className="modal-label" style={{ fontWeight: 'bold' }}>Docente a cargo</label>
-                  <select 
-                    value={selectedTeacher} 
-                    onChange={e => setSelectedTeacher(e.target.value)}
-                    style={{ width: '100%', padding: '0.8rem', borderRadius: '4px', border: '1px solid #ccc' }}
-                  >
-                    <option value="">-- Seleccionar Docente --</option>
-                    {teachers.map(t => (
-                      <option key={t.id} value={t.id}>{t.fullName}</option>
-                    ))}
-                  </select>
-                </div>
-                <button type="button" className="btn btn--primary" onClick={() => void handleAssign()} style={{ padding: '0.8rem 1.5rem' }}>
-                  Asignar Seleccionados
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+              ? `Grupo: ${selectedGrade}`
+              : `Grado: ${memoizedLevels[selectedGroup]?.find(g => g.id === selectedGrade)?.name || selectedGrade}`}
+          </span>}
+        >
+          <AssignmentForm 
+            courses={courses}
+            teachers={teachers}
+            selectedCourses={selectedCourses}
+            onToggleCourse={handleToggleCourse}
+            selectedTeacher={selectedTeacher}
+            onTeacherChange={setSelectedTeacher}
+            gradeCourses={gradeCourses}
+            onAssign={handleAssign}
+          />
+        </PanelCard>
       )}
 
+      <div style={{ height: '1.5rem' }} />
+
       {selectedGrade && !isLoading && (
-        <div className="panel-card">
-          <div className="panel-card__header">
-            <h3>Cursos Asignados Actualmente</h3>
-            <span>({gradeCourses.length} cursos)</span>
-          </div>
-          <div className="table-wrapper">
-            <table>
-              <thead>
-                <tr>
-                  <th>Curso</th>
-                  <th>Docente responsable</th>
-                  <th style={{ textAlign: 'center' }}>Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {gradeCourses.length === 0 ? (
-                  <tr>
-                    <td colSpan={3} style={{ textAlign: 'center', padding: '2rem' }}>Aún no hay cursos asignados a este grado. Selecciona arriba para comenzar.</td>
-                  </tr>
-                ) : (
-                  gradeCourses.map(gc => {
-                    const courseName = courses.find(c => c.id === gc.courseId)?.name || 'Curso Desconocido'
-                    const teacherName = teachers.find(t => t.id === gc.teacherId)?.fullName || 'Docente Desconocido'
-                    
-                    return (
-                      <tr key={gc.id}>
-                        <td><strong>{courseName}</strong></td>
-                        <td>{teacherName}</td>
-                        <td style={{ textAlign: 'center' }}>
-                          <button 
-                            type="button" 
-                            className="btn btn--danger btn--small"
-                            onClick={() => void removeCourseFromGrade(gc.id)}
-                          >
-                            Remover
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <PanelCard 
+          title="Cursos Asignados Actualmente" 
+          headerActions={<span>({gradeCourses.length} cursos)</span>}
+          padding="0"
+        >
+          <AssignedCoursesTable 
+            gradeCourses={gradeCourses}
+            courses={courses}
+            teachers={teachers}
+            onRemove={removeCourseFromGrade}
+          />
+        </PanelCard>
       )}
     </section>
   )
 }
+

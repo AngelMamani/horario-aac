@@ -1,6 +1,11 @@
 import { useState } from 'react'
 import { useStudents } from '../hooks/useStudents'
 import { useGrades } from '../../grades/hooks/useGrades'
+import { PageHeader } from '../../../shared/components/PageHeader'
+import { PanelCard } from '../../../shared/components/PanelCard'
+import { StudentForm } from '../components/StudentForm'
+import { StudentTable } from '../components/StudentTable'
+import { GraduationCap } from 'lucide-react'
 import Swal from 'sweetalert2'
 
 export function StudentsPage() {
@@ -34,94 +39,64 @@ export function StudentsPage() {
     })
   }
 
+  const handleDelete = async (id: string) => {
+    const result = await Swal.fire({
+      title: '¿Eliminar estudiante?',
+      text: "Esta acción no se puede deshacer.",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#c03d3d',
+      confirmButtonText: 'Sí, eliminar',
+      cancelButtonText: 'Cancelar'
+    })
+
+    if (result.isConfirmed) {
+      await deleteStudent(id)
+      void Swal.fire({
+        toast: true,
+        position: 'top-end',
+        icon: 'success',
+        title: 'Estudiante eliminado',
+        showConfirmButton: false,
+        timer: 1500
+      })
+    }
+  }
+
   return (
-    <section className="animate-in">
-      <header className="page-header">
-        <h2>Estudiantes</h2>
-        <p>Gestión de matrícula y seguimiento de alumnos.</p>
-      </header>
+    <section>
+      <PageHeader 
+        title="Estudiantes" 
+        subtitle="Gestión de matrícula y seguimiento de alumnos."
+        icon={GraduationCap}
+      />
 
-      <div className="panel-card form-card" style={{ marginBottom: '1.5rem' }}>
-        <h3>Registrar Nuevo Estudiante</h3>
-        <form className="admin-form" onSubmit={(e) => void handleSubmit(e)}>
-          <div style={{ gridColumn: 'span 2' }}>
-            <label className="modal-label">Nombre Completo</label>
-            <input 
-              type="text" 
-              value={fullName} 
-              onChange={e => setFullName(e.target.value)} 
-              placeholder="APELLIDOS Y NOMBRES"
-            />
-          </div>
-          <div>
-            <label className="modal-label">Grado</label>
-            <select value={gradeId} onChange={e => setGradeId(e.target.value)}>
-              <option value="">Seleccionar grado</option>
-              {grades.map(g => (
-                <option key={g.id} value={g.id}>{g.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="modal-label">Condición</label>
-            <select value={status} onChange={e => setStatus(e.target.value)}>
-              <option value="Regular">Regular</option>
-              <option value="Beca">Beca</option>
-              <option value="Traslado">Traslado</option>
-            </select>
-          </div>
-          <button type="submit" className="btn btn--primary" style={{ marginTop: 'auto' }}>
-            Registrar
-          </button>
-        </form>
-      </div>
+      <PanelCard title="Registrar Nuevo Estudiante">
+        <StudentForm 
+          fullName={fullName}
+          onNameChange={setFullName}
+          gradeId={gradeId}
+          onGradeChange={setGradeId}
+          grades={grades}
+          status={status}
+          onStatusChange={setStatus}
+          onSubmit={handleSubmit}
+        />
+      </PanelCard>
 
-      <div className="panel-card">
-        <div className="table-wrapper">
-          {loading ? (
-            <p style={{ padding: '2rem', textAlign: 'center' }}>Cargando estudiantes...</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre completo</th>
-                  <th>Grado / Sección</th>
-                  <th>Condición</th>
-                  <th style={{ textAlign: 'center' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id}>
-                    <td><strong>{student.fullName}</strong></td>
-                    <td>{student.grade}</td>
-                    <td>
-                      <span className={`badge ${student.status === 'Regular' ? 'badge--low' : 'badge--medium'}`}>
-                        {student.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>
-                      <button 
-                        className="btn btn--danger btn--small"
-                        onClick={() => void deleteStudent(student.id)}
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {students.length === 0 && (
-                  <tr>
-                    <td colSpan={4} style={{ textAlign: 'center', padding: '2rem' }}>
-                      No hay estudiantes registrados.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+      <div style={{ height: '1.5rem' }} />
+
+      <PanelCard 
+        title="Lista de Estudiantes" 
+        headerActions={<span>{students.length} alumnos registrados</span>}
+        padding="0"
+      >
+        <StudentTable 
+          students={students}
+          loading={loading}
+          onDelete={handleDelete}
+        />
+      </PanelCard>
     </section>
   )
 }
